@@ -1,17 +1,18 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
       subroutine readmo
 !-----------------------------------------------
@@ -26,7 +27,7 @@
 !
       USE symmetry_C, ONLY: idepfn, locdep, depmul, locpar
 !
-      use molkst_C, only : ndep, numat, numcal, numcal0, natoms, nvar, keywrd, dh, &
+      use molkst_C, only : ndep, numat, numcal, natoms, nvar, keywrd, dh, &
       & verson, is_PARAM, line, nl_atoms, l_feather, backslash, &
       & moperr, maxatoms, koment, title, method_pm6, refkey, l_feather_1, &
       isok, method_pm6_dh2, caltyp, keywrd_quoted, &
@@ -34,7 +35,7 @@
       ncomments, itemp_1, nbreaks, numat_old, maxtxt, use_ref_geo, &
       n_methods, methods, methods_keys,  method_pm6_d3h4, method_pm6_dh2x, id,  &
       method_pm6_d3h4x, method_pm6_d3, method_pm6_d3_not_h4, method_pm7_hh, method_pm6_org, &
-      method_pm7_minus, method_pm6_dh_plus, prt_coords, prt_cart, mozyme, pdb_label
+      method_pm7_minus, method_pm6_dh_plus, prt_coords, prt_cart, mozyme, pdb_label, gui
 !
       use meci_C, only : maxci
 !
@@ -64,10 +65,6 @@
       integer :: naigin, i, j, k, iflag, nreact, ij, iend, l, ii, jj, &
         i4, j4, ir_temp, l_iw, from_data_set = 14, i_loop, setpi_limit = 50
       integer, external :: quoted
-#ifdef _OPENMP
-      integer :: num_threads, default_num_threads
-      integer, external :: omp_get_max_threads
-#endif
       double precision, dimension(40) :: value
       double precision, dimension(400) :: xyzt
       double precision :: degree, convrt, dum1, dum2, sum, Rab
@@ -148,7 +145,7 @@
         allocate(txtatm1(numat))
         txtatm1(:numat) = txtatm(:numat)
         keywrd = "  LOG "//trim(keywrd)
-        open(unit=ilog, form='FORMATTED', file=log_fn)
+        open(unit=ilog, form='FORMATTED', status='UNKNOWN', file=log_fn, position='asis')
         return
       end if
       if (.not. allocated(lopt)) allocate(lopt(3,maxatoms))
@@ -341,13 +338,6 @@
           lopt(3,3) = 0
         end if
         if (index(keywrd, " XYZ") /= 0) then
-          k = 0
-          do i = 1, natoms
-            do j = 1, 3
-              k = k + lopt(j,i)
-            end do
-          end do
-          j = na(3)
           numat = 0
           do i = 1, natoms
             if (labels(i) /= 99) then
@@ -363,7 +353,7 @@
 !   If everything is marked for optimization then unconditionally mark the first
 !   three atoms for optimization
 !
-          if (k >= 3*numat - 6 .and. j /= 0) lopt(:,:min(3, numat)) = 1
+          if (k >= 3*numat - 6) lopt(:,:min(3, numat)) = 1
           natoms = numat
         end if
 
@@ -467,13 +457,13 @@
             intern = .false.
           else
             call getgeo (ir, labels, geo, coord, lopt, na, nb, nc, intern)
-            if (numcal == 1+numcal0 .and. natoms == 0) then
+            if (numcal == 1 .and. natoms == 0) then
               i = index(keywrd, "GEO_DAT")
               if (i /= 0) then
                 write(line,'(2a)')" GEO_DAT file """//trim(line_1)//""" exists, but does not contain any atoms."
                 write(0,'(//10x,a,//)')trim(line)
                 call mopend(trim(line))
-              else if (numcal < 2+numcal0) then
+              else if (.not. gui .and. numcal < 2) then
                 write(line,'(2a)')" Data set '"//trim(job_fn)//" exists, but does not contain any atoms."
                 write(0,'(//10x,a,//)')trim(line)
                 call mopend(trim(line))
@@ -501,7 +491,7 @@
               coorda(:,:numat) = geo(:,:numat)
               numat_old = numat
             else if (natoms /= -3) then
-              if (moperr .and. numcal == 1+numcal0) return
+              if (moperr .and. numcal == 1) return
               if (maxtxt > txtmax) txtmax = maxtxt
               txtatm1(:natoms) = txtatm(:natoms)
               if (index(keywrd, " RESID") /= 0) txtatm1(:numat)(22:22) = " "
@@ -626,7 +616,7 @@
             end do
           end if
           if (natoms < 0 ) then
-            if (numcal == 1+numcal0) rewind ir
+            if (numcal == 1) rewind ir
             if (.not.isok) then
               write (iw, '(A)') &
                 ' Use AIGIN to allow more geometries to be used'
@@ -637,7 +627,7 @@
               stop
             end if
             isok = .FALSE.
-            if (numcal > 2+numcal0) then
+            if (numcal > 2) then
               naigin = naigin + 1
               write (iw, '(2/,2A)') '   GAUSSIAN INPUT REQUIRES', &
                 ' STAND-ALONE JOB'
@@ -650,7 +640,7 @@
             go to 10
           end if
         end if
-        if (natoms == 0 .and. numcal == 1+numcal0) then
+        if (natoms == 0 .and. numcal == 1) then
           call mopend ('NO ATOMS IN SYSTEM')
           return
         end if
@@ -658,7 +648,7 @@
 !
 !   Use the old geometry, if one exists
 !
-        if (numcal == 1+numcal0) then
+        if (numcal == 1) then
           write(line,'(a)')" Keyword OLDGEO cannot be used in the first calculation - there is no old geometry"
           write(iw,'(//10x,a)')trim(line)
           call to_screen(trim(line))
@@ -685,13 +675,15 @@
       idate = ' '
       call fdate (idate)
       write (iw, '(1X,15(''*****''),''****'')',iostat=i)
-      if (i /= 0) then
-        write(line,'(2a)')" Unable to write to file '", trim(output_fn)//"'"
-        write(0,'(//10x,a,//)')trim(line)
-        call mopend(trim(line))
-        return
-      else
-        if (numcal == 1+numcal0 .and. numat > 50) write(0,'(10x,a)')idate//"  Job: '"//trim(jobnam)//"' started successfully"
+      if ( .not. gui) then
+        if (i /= 0) then
+          write(line,'(2a)')" Unable to write to file '", trim(output_fn)//"'"
+          write(0,'(//10x,a,//)')trim(line)
+          call mopend(trim(line))
+          return
+        else
+          if (numcal == 1 .and. numat > 50) write(0,'(10x,a)')idate//"  Job: '"//trim(jobnam)//"' started successfully"
+        end if
       end if
       maxci = 10000
       write (iw, '(1X,a)')"**                                                                           **"
@@ -784,23 +776,7 @@
       l_feather_1 = (index(keywrd, " MACRO") /= 0)
       write (iw, &
       '(/24X,A,'' CALCULATION RESULTS'',2/1X,15(''*****''),''****'' )') "     "//trim(caltyp)
-!
-! Set thread options for each job using OpenMP API
-!
-#ifdef _OPENMP
-      default_num_threads = omp_get_max_threads()
-      i = index(keywrd, " THREADS")
-      if (i > 0) then
-        num_threads = nint(reada(keywrd, i))
-        if (num_threads < 1) num_threads = 1
-      else
-        num_threads = default_num_threads
-      end if
-      call omp_set_num_threads(num_threads)
-      write (iw,'(" *  CALCULATION DONE: (MAX THREADS = ",I0, 1a, T54,2a)') num_threads, ")", idate,"  *"
-#else
       write (iw,'(" *  CALCULATION DONE: ",31x,2a)') idate,"  *"
-#endif
 !
 ! Copy all keywords to keywrd_txt
 !
@@ -1385,7 +1361,8 @@
       if (i /= 0 .and. index(keywrd,' IRC') + index(keywrd,'FORCE') + index(keywrd," THERMO") == 0) then
         inquire (file=restart_fn, exist = exists)
         if (.not. exists) goto 1900
-        open (unit=ires, file=restart_fn, form="UNFORMATTED")
+        open (unit=ires, file=restart_fn, status="UNKNOWN", &
+                   & form="UNFORMATTED")
         rewind (ires)
                !
                !  Read in the geometric variables
@@ -1513,7 +1490,7 @@
       (index(keywrd," 0SCF") /= 0 .and. index(keywrd," OLDGEO") /= 0 .and. &
        index(keywrd," PDBOUT") /= 0)) then
         inquire(unit=ilog, opened=opend)
-        if (.not. opend) open(unit=ilog, form='FORMATTED', file=log_fn)
+        if (.not. opend) open(unit=ilog, form='FORMATTED', status='UNKNOWN', file=log_fn, position='asis')
         call wrttxt (ilog)
        end if
       if (index(keywrd," OLDGEO") /= 0) call delete_ref_key("OLDGEO", len_trim("OLDGEO"), ' ', 1)
@@ -1814,7 +1791,7 @@
         if (opend) close (iarc)
         if (index(keywrd, "PDBOUT") /= 0) archive_fn = archive_fn(:len_trim(archive_fn) - 3)//"pdb"
       end if
-      if (prt_cart .and. maxtxt < 26 .and. index(keywrd,' NOXYZ') == 0) then
+      if (prt_cart .and. (maxtxt < 26 .and. (index(keywrd,' NOXYZ') == 0 .or. gui))) then
          write (iw, '(2/10X,''CARTESIAN COORDINATES '',/)')
         write (iw, &
       '(4X,''NO.'',7X,''ATOM'',11X,''X'',11X,''Y'',11X,''Z'',/)')

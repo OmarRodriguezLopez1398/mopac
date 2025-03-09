@@ -1,21 +1,22 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
       subroutine flepo(xparam, nvar, funct1)
       use molkst_C, only : numcal, gnorm, iflepo, keywrd, emin, tleft, &
-      & time0, moperr, nscf, limscf, tdump, last, cosine, line, use_disk
+      & time0, moperr, nscf, limscf, tdump, last, cosine, line
       use common_arrays_C, only : hesinv, grad
       USE chanel_C, only : iw, ilog, log, input_fn
       implicit none
@@ -802,10 +803,8 @@
            tprt, txt, Min (gnorm, 999999.999d0), funct1
         write(iw,"(a)")trim(line)
         call to_screen(trim(line))
-        if (use_disk) then
-          endfile (iw)
-          backspace (iw)
-        end if
+        endfile (iw)
+        backspace (iw)
         if (log) then
           write (ilog, "(a)")trim(line)
           endfile (ilog)
@@ -817,7 +816,7 @@
           & f6.2, a1, "  GRAD.:", f10.3, " HEAT:", g14.7)') &
           jcyc, Min (tcycle, 9999.99d0), tprt, txt, &
           & Min (gnorm, 999999.999d0), funct1
-          if (minprt .and. use_disk) then
+          if (minprt) then
             write(iw,"(a)")trim(line)
             endfile (iw)
             backspace (iw)

@@ -1,17 +1,18 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
       subroutine mullik()
 !-----------------------------------------------
@@ -89,9 +90,9 @@
           close (unit=igpt, iostat=i)
           if (graph_formatted) then
             open(unit=igpt, file=gpt_fn(:len_trim(gpt_fn) - 3)//"mgf", form='FORMATTED', &
-              iostat = i)
+              status="UNKNOWN", iostat = i)
           else
-            open(unit=igpt, file=gpt_fn, form='UNFORMATTED', iostat = i)
+            open(unit=igpt, file=gpt_fn, form='UNFORMATTED', status="UNKNOWN", iostat = i)
           end if
           if (i /= 0) then
             write(iw,*)" File '"//gpt_fn(:len_trim(gpt_fn))//"' is unavailable for use"
@@ -250,7 +251,7 @@
       nlower = (norbs*(norbs + 1))/2
       call density_for_GPU (vecs, fract, nclose, nopen, 2.d0, nlower, norbs, 2, pb, 3)
 !
-      pb(:ifact(norbs+1)) = pb(:ifact(norbs+1))*store(:ifact(norbs+1))
+      pb = pb*store
       summ = 0.D0
       do i = 1, norbs
         sum = 0

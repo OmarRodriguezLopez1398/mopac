@@ -1,22 +1,21 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
- subroutine run_param() bind(c)
-#ifdef WIN32
+ subroutine run_param
  !dec$ attributes dllexport :: run_param
-#endif
     use param_global_C, only : numvar, large, power, ifiles_8, &
     & contrl, fnsnew, nfns, xparamp, diffns, fns, penalty, &
     save_parameters
@@ -24,16 +23,14 @@
     use molkst_C, only : tdump, maxatoms, is_PARAM, numat, jobnam, &
      moperr, &
      norbs, mpack, nvar, n2elec, keywrd, keywrd_quoted, uhf, l123, run, method_pm6_d3, &
-     method_pm6, lm61, tleft, emin, iflepo, escf, l_feather, fract, &
+     method_pm6, lm61, tleft, &
      method_pm6_dh_plus, method_pm6_dh2, method_pm7, trunc_1, method_pm8, &
      trunc_2, method_pm6_d3h4, method_pm6_d3_not_h4, n_methods, methods, &
      methods_keys, method_pm7_hh, method_pm7_minus, method_pm7_ts, method_pm6_dh2x, &
-     method_pm6_d3h4x, method_pm6_org, backslash, os, git_hash, verson, step, mozyme, density
-    use cosmo_C, only : iseps, nspa, useps, solv_energy
-    use meci_C, only : maxci
+     method_pm6_d3h4x, backslash, os, git_hash, verson
+    use cosmo_C, only : iseps, nspa
 !
-    use common_arrays_C, only:  atmass, na, nb, nc, geoa, p, nw, pa, pb, &
-      pdiag, cell_ijk
+    use common_arrays_C, only:  atmass, na, nb, nc, geoa, p, nw
 !
     use chanel_C, only : ir, iw, ilog, job_fn, input, iarc, ifiles_1
     use funcon_C, only : fpc_1, fpc_2, a0, ev, fpc_6, fpc_7, fpc_8, &
@@ -41,7 +38,7 @@
     use conref_C, only : fpcref
     use meci_C, only : nmos
     use parameters_C, only: f0sd, g2sd, tore, ios, iop, iod, f0sd_store, g2sd_store, &
-      zs, t_par, xfac, alpb
+      zs, t_par
     USE journal_references_C, only : allref
     implicit none
     logical :: opend, exists, quotation_mark
@@ -86,22 +83,6 @@
       endif
     end do
 !------------------------------------------------------------------------
-    moperr = .false.
-    useps = .false.
- !   method_PM8 = .false.
-    cell_ijk = 0
-    step = 0.d0
-    mozyme = .false.
-    xfac = 0.d0
-    alpb = 0.d0
-    density = 0.d0
-    fnsnew = 0.d0
-    fract = 0.d0
-    emin = 0.d0
-    escf = 0.d0
-    solv_energy = 0.d0
-    iflepo = 0
-    l_feather = (method_PM7 .or. method_pm6_org .or. index(keywrd, " MOZ") /= 0 .and. (index(keywrd, " PM6") /= 0))
     t_par(1)  = "Used in ccrep for scalar correction of C-C triple bonds."
     t_par(2)  = "Used in ccrep for exponent correction of C-C triple bonds."
     t_par(3)  = "Used in ccrep for scalar correction of O-H term."
@@ -115,6 +96,7 @@
     tore = ios + iop + iod
     is_PARAM = .true.
     run = 1
+    call mopac_version(verson)
 #ifdef MOPAC_OS
     os = MOPAC_OS
 #endif
@@ -167,7 +149,7 @@
     else
       text = jobnam (:i) // ".out"
     end if
-  97  open (unit=ifiles_8, file=text, iostat=i)
+  97  open (unit=ifiles_8, file=text, status="UNKNOWN", iostat=i)
     if (i /= 0) then
       write(0,*)" Output file '"//trim(text)//"' is busy.  Correct the fault or kill this job"
       call sleep (10)
@@ -218,7 +200,7 @@
   !
     if (contrl(1:1) /= " ") then
      text = " " // trim(contrl)
-      contrl = trim(text)
+      contrl = text
     else
       text = trim(contrl)
     end if
@@ -268,7 +250,7 @@
       end if
     end do
 !
-!  Replace backslash with forward-slash
+! Convert all bad slashes into good slashes
 !
     do
       i = index(contrl, backslash)
@@ -299,7 +281,6 @@
 !
     maxatoms = n1 + n4 + n9
     call setup_mopac_arrays(maxatoms, 1)
-    pdiag = 0.d0
     allocate(nw(maxatoms))
     norbs = 9*n9 + 4*n4 + n1
     mpack = (norbs*(norbs + 1))/2
@@ -309,15 +290,13 @@
      & 100*(n4*(n4-1))/2+10*n4*n1+ (n1*(n1-1))/2+10
 
     nmos = 12
-    l123 = 1 ! PARAM does not perform periodic calculations
+    l123 = 1000
     uhf = .true.
     call setup_mopac_arrays(1,2)
     allocate(geoa(3,maxatoms))
-    na = 0
-    nb = 0
-    nc = 0
-    pa = 0.d0
-    pb = 0.d0
+    na(:) = 0
+    nb(:) = 0
+    nc(:) = 0
     atmass = 1.d0
     if (Index(contrl, "OLDFPC") == 0)then
   !
@@ -389,7 +368,6 @@
     call fdate (idate)
     write (ifiles_8, "(' *',50x,A24)") idate
     keywrd = contrl
-    call split_keywords(keywrd)
     call parkey (contrl)
     contrl = trim(keywrd)
     write (ifiles_8, "(' *',/1X,15('*****'))")
@@ -430,9 +408,8 @@
 ! Read in all data relating to reference data
 !
     i = size(p)
-    if (allocated(p)) deallocate(p)
+    deallocate(p)
     call datinp()
-    maxci = 100
     text = trim(jobnam)//".F90"
     j = iw
     iw = ifiles_8
@@ -460,7 +437,7 @@
       i = Index (jobnam, " ") - 1
       inquire (unit=iarc, opened=opend)
       if (opend) close(iarc)
-      open (unit=iw, file=jobnam(:len_trim(jobnam))//".arc")
+      open (unit=iw, file=jobnam(:len_trim(jobnam))//".arc", status="UNKNOWN")
       rewind (iw)
     else
       open (unit=iw, status="SCRATCH", form="FORMATTED")

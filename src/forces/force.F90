@@ -1,17 +1,18 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
       subroutine force()
 !
@@ -135,7 +136,7 @@
       end if
       if (id > 0) then
         natoms = numat + id
-        if(.not. ts) nvar = nvar - 3*id
+        nvar = nvar - 3*id ! No need to check for TS - solids can't have transition states.
         labels(numat + 1:numat + id) = 107
       end if
       na = 0
@@ -328,7 +329,7 @@
       end do
       if (debug) then
         write (iw, '(2/10X,'' FULL FORCE MATRIX, INVOKED BY "DFORCE"'')')
-        if (index(keywrd, " NOREOR") == 0 .and. .not. ts) then
+        if (index(keywrd, " NOREOR") == 0) then
           write(iw,'(/10x,a)')" Caution: NOREOR is NOT present, therefore system will be oriented"
           write(iw,'(10x,a)')" so that the moments of inertia are along the Cartesian axes."
         end if
@@ -642,6 +643,7 @@
 
   99  if (allocated(dipt))    deallocate (dipt)
       if (allocated(travel))  deallocate (travel)
+      if (allocated(freq))    deallocate (freq)
       if (allocated(redmas))  deallocate (redmas)
       if (store_natoms /= natoms + id) then
         natoms = -30; numat = -30

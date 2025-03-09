@@ -1,17 +1,18 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 subroutine geout (mode1, geo, na, nb, nc, labels, loc)
 !*********************************************************************
@@ -33,9 +34,9 @@ subroutine geout (mode1, geo, na, nb, nc, labels, loc)
     integer, intent (in) :: na(natoms), nb(natoms), nc(natoms)
     integer, intent (inout) :: loc(2,3*natoms + 6)
     double precision, dimension (3, natoms), intent (in) :: geo
-    integer :: mode, iprt, i, j, n, ia, ii, k, store_maxtxt
+    integer :: mode, iprt, i, j, n, ia, ii, k, igui, store_maxtxt
     double precision :: degree, w, x 
-    logical :: cart, lxyz, charge
+    logical :: cart, lxyz, charge, gui = .false.
     character , dimension(3) :: q*2 
     character :: flag1*2, flag0*2,  blank*80, fmt1*4, fmt23*4
 !*********************************************************************
@@ -50,6 +51,7 @@ subroutine geout (mode1, geo, na, nb, nc, labels, loc)
 !
 !*********************************************************************
       mode = mode1 
+      igui = -10 ! Set to impossible value
       store_maxtxt = maxtxt
       charge = (index(keywrd, " PRTCHAR") /= 0)
       lxyz = index(keywrd,' COORD') + index(keywrd,'VELO') /= 0 
@@ -65,8 +67,13 @@ subroutine geout (mode1, geo, na, nb, nc, labels, loc)
         flag0 = '  ' 
         iprt = iw 
       else 
-        flag1 = '+1' 
-        flag0 = '+0' 
+        if (gui) then
+          flag1 = ' 1' 
+          flag0 = ' 0' 
+        else
+          flag1 = '+1' 
+          flag0 = '+0' 
+        end if
         iprt = abs(mode) 
       endif 
       degree = 57.29577951308232D0 
@@ -175,7 +182,7 @@ subroutine geout (mode1, geo, na, nb, nc, labels, loc)
         end if
         if (labels(i) == 0) cycle  
     
-        if (na(i) == 0 .or. cart) then 
+        if (na(i) == igui .or. cart) then 
           if (mode /= 1) then !  Print suitable for reading as a data-set
             if (labels(i)/=99 .and. labels(i)/=107) then 
               if (maxtxt == 0 ) j = 4    

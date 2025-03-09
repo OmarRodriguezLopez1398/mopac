@@ -1,30 +1,31 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
       subroutine  writmo
       use cosmo_C, only : iseps, area, fepsi, cosvol, ediel, solv_energy
 !
       use molkst_C, only : numat, nclose, nopen, fract, nalpha, nelecs, nbeta, &
-      & norbs, nvar, gnorm, iflepo, enuclr,elect, ndep, nscf, numcal, numcal0, escf, &
+      & norbs, nvar, gnorm, iflepo, enuclr,elect, ndep, nscf, numcal, escf, &
       & keywrd, os, verson, time0, moperr, last, iscf, id, pressure, mol_weight, &
-      jobnam, line, mers, uhf, method_indo, &
+      jobnam, line, mers, uhf, method_indo, method_PM6_FGC, &
       density, formula, mozyme, mpack, stress, &
       sz, ss2, maxtxt, E_disp, E_hb, E_hh, l_normal_html, &
       no_pKa, nalpha_open, nbeta_open, use_ref_geo, N_Hbonds, caltyp, &
       hpress, nsp2_corr, Si_O_H_corr, sum_dihed, atheat, &
-      prt_gradients, prt_coords, prt_cart, prt_pops, prt_charges, pdb_label, backslash
+      prt_gradients, prt_coords, prt_cart, prt_pops, prt_charges, pdb_label, backslash, gui
 !
       use MOZYME_C, only : icocc, icvir, ncocc, ncvir, nvirtual, noccupied, &
       & nnce, nncf, cocc, cvir, ncf, nce,  cocc_dim, &
@@ -52,6 +53,7 @@
 #if MOPAC_F2003
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
+
 !-----------------------------------------------
       implicit none
 !-----------------------------------------------
@@ -135,6 +137,9 @@
       iscf = max(1,iscf)
       write (iw, '(4X,A58)') iter(iscf)
       write (iw, "(2/29X,A,' CALCULATION')") trim(caltyp)
+      if (method_PM6_FGC) then
+          write (iw, "(1/21X,A)") 'CALCULATION WITH FGC CORRECTION'
+      endif
       write (iw, '(55X,''MOPAC v'',a,'' '',a)') trim(verson), trim(os)
       write (iw, '(55X,A24)') idate
       if (iscf == 2) then
@@ -171,8 +176,9 @@
       '(4/10X,''FINAL H.O.F PLUS STRESS ='',F17.5,'' KCAL/MOL''  ,'' ='',F14.5,'' KJ/MOL'')') escf, escf*4.184D0
         write (iw, &
       '(10X,''FINAL STRESS            ='',F17.5,'' KCAL/MOL''  ,'' ='',F14.5,'' KJ/MOL'')') stress, stress*4.184D0
-        write (iw, &
-      '(10X,''FINAL HEAT OF FORMATION ='',F17.5,'' KCAL/MOL''  ,'' ='',F14.5,'' KJ/MOL'')') escf - stress, (escf - stress)*4.184D0
+        write(iw, '(10X,''FINAL HEAT OF FORMATIONBLA ='',F17.5,'' KCAL/MOL''  ,'' ='',F14.5,'' KJ/MOL'')') &
+               escf - stress, (escf - stress)*4.184D0
+
         call  geo_diff(sum, rms, .false.)
         sum = 0.d0
         rms = 0.d0
@@ -199,9 +205,14 @@
           return
         end if
         stress = -1.1d-6
-        if(.not. method_indo) then
+        if(.not. method_indo .and. .not. method_PM6_FGC) then
           write (iw, &
           '(4/10X,''FINAL HEAT OF FORMATION ='',F17.5,'' KCAL/MOL''  ,'' ='',F14.5,'' KJ/MOL'')') escf, escf*4.184D0
+        endif
+        if (method_PM6_FGC) then
+          write (iw, &
+            '(4/10X,''FINAL HEAT OF FORMATION (FGC corrections included) ='',F17.5,'' KCAL/MOL''  ,'' ='',F14.5,'' KJ/MOL'')') &
+                   escf, escf*4.184D0
         endif
       end if
       elect = elect + solv_energy
@@ -725,13 +736,6 @@
           end if
           sum = dumy(1) ! Dummy operation - to use dumy
         end if
-      else ! make sure kchrge is defined, even with no valence electrons
-        sum = 0.D0
-        do i = 1, numat
-          l = nat(i)
-          sum = sum + tore(l)
-        end do
-        kchrge = nint(sum)
       end if
       if (norbs > 0) then
         if (index(keywrd,' FOCK') /= 0) then
@@ -740,7 +744,7 @@
         end if
         if (mers(1) /= 0 .and. .not. mozyme .and. index(keywrd, " BZ") /= 0) then
           bcc = index(keywrd,' BCC') /= 0
-          open(unit=ibrz, file=brillouin_fn)
+          open(unit=ibrz, file=brillouin_fn, status='UNKNOWN')
           write (ibrz,*) norbs, (max(mers(i),1), i = 1,3), bcc
           write (ibrz,*) (f(i),i=1,(norbs*(norbs + 1))/2)
           write (ibrz,*) tvec, id, numat, ((coord(j,i),j=1,3),i=1,numat)
@@ -876,7 +880,7 @@
           end if
           pa = p - pb
         end if
-        if (index(keywrd,' BONDS') + index(keywrd,' ALLBO') /= 0) then
+        if (gui .or. index(keywrd,' BONDS') + index(keywrd,' ALLBO') /= 0) then
           if ( .not. mozyme) then
             if (nbeta == 0) then
               write (iw, '(/10X,''BONDING CONTRIBUTION OF EACH M.O.'',/)')
@@ -914,7 +918,7 @@
         sum = meci()
         if (moperr) return
       end if
-      if (index(keywrd,' MULLIK') + index(keywrd,' GRAPH') /= 0) then
+      if (index(keywrd,' MULLIK') + index(keywrd,' GRAPH') /= 0 .and. .not. gui) then
         if (index(keywrd,' MULLIK') /= 0) write (iw, &
           '(/10X,'' MULLIKEN POPULATION ANALYSIS'')')
         if (mozyme) then
@@ -957,7 +961,7 @@
         inquire(unit=iarc, opened=opend)
         if ( .not. opend) then
           if (namfil == '**NULL**') namfil = archive_fn
-          open(unit=iarc, file=archive_fn, iostat = i)
+          open(unit=iarc, file=archive_fn, status='UNKNOWN', position='asis', iostat = i)
           if (i /= 0) then
             write(iw,*) "Could not open archive file, run continuing."
             return
@@ -971,13 +975,13 @@
             if (line(i:i) == "/" .or. line(i:i) == backslash) exit
           end do
           line = trim(line)//"pdb"
-          open(unit=31, file=trim(line))
+          open(unit=31, file=trim(line), status='UNKNOWN', position='asis')
           l_normal_html = .true.
           call l_control("Write_Escf", len("Write_Escf"), 1)
           call pdbout(31)
           close (31)
         end if
-        if (numcal == 2+numcal0) then
+        if (numcal == 2) then
           if (index(keywrd, "OLDGEO") /= 0) then
 !
 ! Write a warning that OLDGEO has been used, so user is aware that multiple ARC files are present
@@ -1078,7 +1082,7 @@
         if (abs(solv_energy) > 1.d-1) &
           write (iwrite, '(    10X,''SOLVATION ENERGY        ='',F17.5,'' EV''   )') solv_energy
       end if
-      if (iseps) then
+      if (abs(ediel) > 1.d-5) then
         write (iwrite, '(    10X,''DIELECTRIC ENERGY       ='',F17.5,'' EV''   )') ediel
       end if
       if (Abs (pressure) > 1.d-4) then
@@ -1355,7 +1359,7 @@
   double precision :: sum
   integer :: i, j, k, i1, i2, ips, ix
   double precision :: fcon, dqam1dft, dd, enew
-    open (unit=iwc, file=cosmo_fn)
+    open (unit=iwc, file=cosmo_fn, status='unknown')
     if (index(keywrd,'COSCCH') > 0) then
       fcon=a0*ev
 10    read(ir,'(a)',err=30,end=30) line
@@ -1565,3 +1569,8 @@
      write (iw, '(4/10X,''FINAL HEAT OF FORMATION ='',F17.5,'' KCAL/MOL''  ,'' ='',F14.5,'' KJ/MOL'')') escf, escf*4.184D0
     return
   end subroutine PM7_TS
+
+    
+
+    
+   

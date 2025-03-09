@@ -1,17 +1,18 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
       subroutine geout(mode1)
 !-----------------------------------------------
@@ -21,7 +22,7 @@
       & p, atmass, all_comments, pibonds_txt, l_atom
       USE parameters_C, only : tore, ams
       USE molkst_C, ONLY: numat, natoms, ndep, keywrd, maxtxt, line, &
-      & ncomments, moperr, nl_atoms
+      & ncomments, moperr, nl_atoms, gui
       USE symmetry_C, ONLY: depmul, locpar, idepfn, locdep
       USE elemts_C, only : elemnt
       USE chanel_C, only : iw
@@ -79,8 +80,13 @@
         flagn = ' +'
         iprt = iw
       else
-        flag1 = '+1'
-        flag0 = '+0'
+        if (gui) then
+          flag1 = ' 1'
+          flag0 = ' 0'
+        else
+          flag1 = '+1'
+          flag0 = '+0'
+        end if
         flagn = '-1'
         iprt = abs(mode)
       end if
@@ -196,7 +202,7 @@
           x = geo(3,i)
         end if
         if (latom == i) q(lparam) = flagn
-        if (latom1 == i) q(lpara1) = flagn
+        if ( .not. gui .and. latom1 == i) q(lpara1) = flagn
         if (latom2 == i) q(lpara2) = flagn
         blank = elemnt(labels(i))
         if (labels(i) /= 99 .and. labels(i) /= 107) ii = ii + 1
@@ -209,8 +215,13 @@
           if (txtatm(i)(15:16) == "**") txtatm(i)(15:16) = "99"
           if (txtatm(i)(23:26) == "****") txtatm(i)(23:26) = "9999"
           line = txtatm(i)
-          if (line /= " ") blank = trim(blank)//"("//line(:store_maxtxt)//')  '
-          igui = 0
+          if (gui .and. txtatm(i)(3:) /= " ") then
+            blank = trim(blank)//"("//txtatm(i)(3:)//'  '
+            igui = -10
+          else
+            if (line /= " ") blank = trim(blank)//"("//line(:store_maxtxt)//')  '
+            igui = 0
+          end if
         end if
         k = 0
         if (mode /= 1 .and. ii > 0 .and. nat(1) /= 0) then

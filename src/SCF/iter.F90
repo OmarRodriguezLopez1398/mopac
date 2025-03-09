@@ -1,24 +1,25 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
       subroutine iter(ee, fulscf, rand)
       use common_arrays_C, only : eigs, p, pa, pb, cb, h, &
        &  c, nat, nfirst, nlast, eigb, pdiag, f, w, wk, fb
       use iter_C, only : pold, pold2, pbold, pbold2, &
       & pold3, pbold3, vec_ai, vec_bi, fock_ai, fock_bi, p_ai, &
-      p_bi, h_ai, h_bi, vecl_ai, vecl_bi, pulay_work1, pulay_work2, pulay_work3
+      p_bi, h_ai, h_bi, vecl_ai, vecl_bi
       USE parameters_C, only :
       USE funcon_C, only : fpc_9
       USE maps_C, ONLY: latom
@@ -27,7 +28,7 @@
     &    nclose, nopen, fract, numcal, mpack, iflepo, iscf, &
     &    enuclr, keywrd, gnorm, moperr, last, nscf, emin, &
          limscf, atheat, is_PARAM, id, line, lxfac, nalpha_open, &
-         nbeta_open, npulay, method_indo, use_disk
+         nbeta_open, npulay, method_indo
       USE reimers_C, only: dd, ff, tot, cc0, aa, dtmp, nb2
       use cosmo_C, only : useps
 #ifdef GPU
@@ -149,7 +150,7 @@
         iscf = 1
         trans = 0.200D0
         if (index(keywrd,' OLDENS') /= 0) then
-           if (use_disk) call den_in_out(0)
+           call den_in_out(0)
            if (moperr) return
            if (uhf) then
             pold(1:mpack) = pa(1:mpack)
@@ -766,10 +767,8 @@
             niter, pl, plb, escf, diff
           write(iw,'(a)')trim(line)
           call to_screen(line)
-          if (use_disk) then
-            endfile (iw)
-            backspace (iw)
-          end if
+          endfile (iw)
+          backspace (iw)
         end if
       end if
       if (incitr) eold = escf
@@ -813,14 +812,6 @@
 !                                                                      *
 !***********************************************************************
            if (okpuly .and. makea .and. iredy>1) then
-            if (.not. Allocated (pulay_work1)) then
-              allocate (pulay_work1(norbs, norbs), pulay_work2(norbs, norbs), &
-              & pulay_work3(norbs, norbs), stat=i)
-              if (i /= 0) then
-                call memory_error("Pulay converger in Iter")
-                return
-              end if
-            end if
 #ifdef GPU
               if (lgpu) then
                  call pulay_for_gpu (f, pa, norbs, pold, pold2, pold3, &
@@ -934,14 +925,6 @@
 !                                                                      *
 !***********************************************************************
             if (okpuly .and. makeb .and. iredy>1) then
-              if (.not. Allocated (pulay_work1)) then
-                allocate (pulay_work1(norbs, norbs), pulay_work2(norbs, norbs), &
-                & pulay_work3(norbs, norbs), stat=i)
-                if (i /= 0) then
-                  call memory_error("Pulay converger in Iter")
-                  return
-                end if
-              end if
 #ifdef GPU
               if (lgpu) then
                  call pulay_for_gpu (fb, pb, norbs, pbold, pbold2, pbold3, &
@@ -1112,7 +1095,7 @@
 !  become corrupt if INTERP is called.
 !
       use iter_C, only : vec_ai, vec_bi, fock_ai, fock_bi, p_ai, &
-      p_bi, h_ai, h_bi, vecl_ai, vecl_bi, pulay_work1, pulay_work2, pulay_work3
+      p_bi, h_ai, h_bi, vecl_ai, vecl_bi
       implicit none
         if (allocated(vec_ai)) deallocate(vec_ai)
         if (allocated(vec_bi)) deallocate(vec_bi)
@@ -1124,9 +1107,6 @@
         if (allocated(h_bi)) deallocate(h_bi)
         if (allocated(vecl_ai)) deallocate(vecl_ai)
         if (allocated(vecl_bi)) deallocate(vecl_bi)
-        if (allocated(pulay_work1)) deallocate(pulay_work1)
-        if (allocated(pulay_work2)) deallocate(pulay_work2)
-        if (allocated(pulay_work3)) deallocate(pulay_work3)
       end subroutine delete_iter_arrays
 
 
@@ -1158,7 +1138,8 @@
         if (formatted)then
           open(unit=iden, file=density_fn)
         else
-          open(unit=iden, file=density_fn, form='UNFORMATTED')
+          open(unit=iden, file=density_fn, status='UNKNOWN', &
+          form='UNFORMATTED', position='asis')
         end if
         rewind iden
         if (mode == 0) then

@@ -1,13 +1,12 @@
 # Molecular Orbital PACkage (MOPAC)
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![DOI](https://zenodo.org/badge/177640376.svg)](https://zenodo.org/badge/latestdoi/177640376)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/mopac/badges/version.svg)](https://anaconda.org/conda-forge/mopac)
 ![build](https://github.com/openmopac/mopac/actions/workflows/CI.yaml/badge.svg)
 [![codecov](https://codecov.io/gh/openmopac/mopac/branch/main/graph/badge.svg?token=qM2KeRvw06)](https://codecov.io/gh/openmopac/mopac)
 
-This is the official repository of the modern open-source version of MOPAC, which is now released under an Apache license
-(versions 22.0.0 through 23.0.3 are available under an LGPL license).
+This is the official repository of the modern open-source version of MOPAC, which is now released under an LGPL license.
 This is a direct continuation of the commercial development and distribution of MOPAC, which ended at MOPAC 2016.
 Commercial versions of MOPAC are no longer supported, and all MOPAC users are encouraged to switch to the most recent open-source version.
 
@@ -92,31 +91,6 @@ The CTest-based testing requires an installation of Python 3.x and Numpy that ca
 The main source for MOPAC documentation is presently its old [online user manual](http://openmopac.net/manual/index.html).
 
 There is a [new documentation website](https://openmopac.github.io) under development, but it is not yet ready for general use.
-
-## Interfaces
-
-While MOPAC is primarily a self-contained command-line program whose behavior is specified by an input file, it also has other modes of
-operation, some of which only require the MOPAC shared library and not the executable. Note that API calls to the MOPAC library are not
-thread safe. Each thread must load its own instance of the MOPAC library, such as by running independent calling programs.
-
-### MDI Engine
-
-MOPAC can be compiled to run as an MDI Engine through the [MolSSI Driver Interface Library](https://github.com/MolSSI-MDI/MDI_Library)
-by setting `-DMDI=ON` when running CMake. See [MDI documentation](https://molssi-mdi.github.io/MDI_Library) for more information.
-
-### Run from library
-
-MOPAC calculations can be run as a C-like library call to `run_mopac_from_input(path_to_file)` where `path_to_file` is a C string
-containing the system path to a MOPAC input file. Alternatively, a Fortran wrapper in the `include` directory allows this to be run as
-the subroutine `run_mopac_from_input_f(path_to_file)` in the `mopac_api_f` module where `path_to_file` is a Fortran string.
-
-### Diskless/stateless API
-
-A subset of MOPAC calculations can be run through a C-like Application Programming Interface (API) defined by the `mopac.h` C header file
-in the `include` directory, which also has a Fortran wrapper for convenience to Fortran software developers. Calculations run through this API
-do not use any input or output files or any other form of disk access, and the data structures of the API contain all relevant information
-regarding the input and output of the MOPAC calculation. The functionality and data exposed by this API is limited and has been designed to
-align with the most common observed uses of MOPAC. Future expansion of this functionality and data will be considered upon request.
 
 ## Citation
 

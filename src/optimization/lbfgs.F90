@@ -1,17 +1,18 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
     subroutine lbfgs (xparam, escf)
 !
@@ -23,7 +24,7 @@
 !    Mathematical Programming B, 45, 3, pp. 503-528.
 !
       use molkst_C, only: tleft, time0, iflepo, tdump, gnorm, natoms, keywrd, stress, &
-      moperr, nvar, id, line, last, mozyme, numat, prt_gradients, keywrd_txt,  prt_coords, use_disk
+      moperr, nvar, id, line, last, mozyme, numat, prt_gradients, keywrd_txt,  prt_coords
 !
       use chanel_C, only: iw0, iw, log, ilog, input_fn
 !
@@ -298,10 +299,8 @@
              tprt, txt, Min (gnorm, 999999.999d0), escf, trim(line1)
             write(iw,"(a)")trim(line)
             call to_screen(trim(line))
-            if (use_disk) then
-              endfile (iw)
-              backspace (iw)
-            end if
+            endfile (iw)
+            backspace (iw)
             if (log) write (ilog, '(a)', err = 1000)trim(line)
             resfil = .false.
           else
@@ -310,10 +309,8 @@
                    nstep, Min (tstep, 9999.99d0), tprt, txt, &
                    & Min (gnorm, 999999.999d0), escf, trim(line1)
             write(iw,"(a)")trim(line)
-            if (use_disk) then
-              endfile (iw)
-              backspace (iw)
-            end if
+            endfile (iw)
+            backspace (iw)
             if (log) write (ilog, "(a)")trim(line)
             call to_screen(trim(line))
           end if
@@ -324,7 +321,7 @@
             call to_screen(line(:i))
           end if
           if (nflush /= 0) then
-            if (Mod(nstep, nflush) == 0 .and. use_disk) then
+            if (Mod(nstep, nflush) == 0) then
               endfile (iw)
               backspace (iw)
               if (log) then
@@ -339,10 +336,8 @@
           !  with the old gradient.  Ideally, this should be small.
           !
   1000    call dcopy (nvar, grad, 1, gold, 1)
-          if (use_disk) then
-            endfile (iw)
-            backspace (iw)
-          end if
+          endfile (iw)
+          backspace (iw)
           !
           !  EXIT CRITERIA.  (The criteria in SETULB are ignored.)
           if (gnorm < tolerg) then
@@ -416,7 +411,7 @@
     end subroutine lbfgs
     subroutine lbfsav (tt0, mode, wa, nwa, iwa, niwa, task, csave, lsave, isave, &
    & dsave, nstep, escf)
-      use molkst_C, only: nscf, numat, norbs, nvar, use_disk
+      use molkst_C, only: nscf, numat, norbs, nvar
       use chanel_C, only: ires, iw, restart_fn
       use common_arrays_C, only: xparam, grad
       implicit none
@@ -431,12 +426,11 @@
       double precision, dimension (nwa), intent (inout) :: wa
       logical :: opend
       integer :: old_numat, old_norbs, i, j
-      if (.not. use_disk) return
       inquire (unit=ires, opened=opend)
       if (opend) then
         close (unit=ires, status="KEEP")
       end if
-      open (unit=ires, file=restart_fn, form="UNFORMATTED")
+      open (unit=ires, file=restart_fn, status="UNKNOWN", form="UNFORMATTED")
       rewind (ires)
       if (mode == 1) then
         call den_in_out (1)

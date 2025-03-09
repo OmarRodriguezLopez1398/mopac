@@ -1,21 +1,22 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
       subroutine powsq()
       use molkst_C, only : tleft, time0, numcal, keywrd, last, &
-      &  nscf, tdump, nvar, iflepo, escf, line, use_disk
+      &  nscf, tdump, nvar, iflepo, escf, line
       use funcon_C, only : a0
       use common_arrays_C, only : loc, grad, xparam, gnext1, gmin1
       use chanel_C, only : iw0, iw, ilog, log
@@ -385,10 +386,8 @@
   380   format(' CYCLE:',i6,' TIME:',f8.3,' TIME LEFT:',f6.2,a1,'  GRAD.:',f10.3,' HEAT:',g14.7)
       end if
       call to_screen(line)
-      if (use_disk) then
-        endfile (iw)
-        backspace (iw)
-      end if
+      endfile (iw)
+      backspace (iw)
       if (log) then
         endfile (ilog)
         backspace (ilog)
@@ -591,7 +590,7 @@
 !           IPOW(9)= 0 FOR RESTORE, 1 or 2 FOR DUMP (2: silent)
 !
 !*********************************************************************
-      open(unit=ires, file=restart_fn, form='UNFORMATTED')
+      open(unit=ires, file=restart_fn, status='UNKNOWN', form='UNFORMATTED', position='asis')
       rewind ires
       if (ipow(9) /= 0) then
         if (ipow(9) == 1) then

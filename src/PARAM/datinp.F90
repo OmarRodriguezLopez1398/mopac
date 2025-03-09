@@ -1,17 +1,18 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  subroutine datinp
     use param_global_C, only : maxmol, Atom_pKas, ifiles_8, contrl, &
@@ -37,7 +38,7 @@
     nalpha, nelecs, nopen, ndep, fract, nbeta, numat, lm61, n2elec, &
     jobnam, errtxt, msdel, id, l1u, l2u, l3u, method_pm3, line, method_pm6_dh2, &
     method_pm7, method_PM6_DH_plus, nalpha_open, nbeta_open, method_pm6_d3h4, &
-    method_pm6_d3_not_h4, method_pm6_d3h4x, backslash
+    method_pm6_d3_not_h4, method_pm6_d3h4x, method_PM6_FGC, backslash
 !
     use meci_C, only : nmos
 !
@@ -509,6 +510,7 @@
             call l_control("PM7", len("PM7"), -1)
             call l_control("PM6-DH", len("PM6-DH"), -1)
             call l_control("PM6-D3H4", len("PM6-D3H4"), -1)
+            call l_control("PM6-FGC", len("PM6-FGC"), -1)
             call l_control("PM6-D3H4X", len("PM6-D3H4X"), -1)
             call l_control("PM6-D3(H4)", len("PM6-D3(H4)"), -1)
             call l_control("PM6", len("PM6"), -1)
@@ -543,8 +545,9 @@
             if (method_mndod)       keywrd(i:i+4) = "MNDOD"
             if (method_PM6_DH_plus) keywrd(i:i+6) = "PM6-DH+"
             if (method_PM6_D3H4)    keywrd(i:i+7) = "PM6-D3H4"
-            if (method_PM6_D3H4X)   keywrd(i:i+8) = "PM6-D3H4X"
-            if (method_PM6_D3_not_H4) keywrd(i:i+9) = "PM6-D3(H4)"
+            if (method_PM6_FGC)     keywrd(i:i+8) = "PM6-FGC"
+            if (method_PM6_D3H4X)   keywrd(i:i+9) = "PM6-D3H4X"
+            if (method_PM6_D3_not_H4) keywrd(i:i+10) = "PM6-D3(H4)"
             if (method_PM6_DH2)     then
               if (index(contrl, " PM6-DH2X") /= 0) then
                call l_control("PM6-DH2X", len("PM6-DH2X"),  1)

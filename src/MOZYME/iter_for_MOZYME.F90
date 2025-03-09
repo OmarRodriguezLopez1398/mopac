@@ -1,21 +1,22 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 subroutine iter_for_MOZYME (ee)
-    use molkst_C, only: norbs, step_num, numcal, numcal0, nscf, escf, &
-       & numat,  enuclr, atheat, emin, keywrd, moperr, line, use_disk
+    use molkst_C, only: norbs, step_num, numcal, nscf, escf, &
+       & numat,  enuclr, atheat, emin, keywrd, moperr, line
 !
     use chanel_C, only: iw, iend, end_fn
 !
@@ -64,8 +65,6 @@ subroutine iter_for_MOZYME (ee)
     integer, external :: ijbo
     logical, external :: PLS_faulty
     double precision, external :: helecz, reada
-    integer, dimension (:), allocatable :: iwork
-    double precision, dimension (:), allocatable :: rwork
     add_niter = 0
 !
         80  continue
@@ -136,7 +135,7 @@ subroutine iter_for_MOZYME (ee)
         return
       end if
       if (Index (keywrd, " OLDEN") /= 0) then
-          if (use_disk) call pinout(0, (index(keywrd, "SILENT") == 0))
+          call pinout(0, (index(keywrd, "SILENT") == 0))
           if (add_niter /= 0)  call l_control("OLDEN", len_trim("OLDEN"), -1)
           if (add_niter /= 0)  call l_control("SILENT", len_trim("SILENT"), -1)
           if (moperr) return
@@ -225,98 +224,25 @@ subroutine iter_for_MOZYME (ee)
 !  become small.  The LMOs were stored to disc.  The old arrays will now be deleted
 !  and re-created 60% larger than before.  Then the LMOs are read off disc
 !
-          if (use_disk) then
-            deallocate (icocc, cocc, icvir, cvir)
+          deallocate (icocc, cocc, icvir, cvir)
 
 !
 !  Re-allocate more memory
 !
-            icocc_dim = Nint(icocc_dim*1.6)
-            cocc_dim = Nint(cocc_dim*1.6)
-            icvir_dim = Nint(icvir_dim*1.6)
-            cvir_dim = Nint(cvir_dim*1.6)
-            allocate (icocc(icocc_dim), cocc(cocc_dim), &
-                  & icvir(icvir_dim), cvir(cvir_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
+          icocc_dim = Nint(icocc_dim*1.6)
+          cocc_dim = Nint(cocc_dim*1.6)
+          icvir_dim = Nint(icvir_dim*1.6)
+          cvir_dim = Nint(cvir_dim*1.6)
+          allocate (icocc(icocc_dim), cocc(cocc_dim), &
+                & icvir(icvir_dim), cvir(cvir_dim), stat = i)
+          if (i /= 0) then
+            call memory_error(" iter_for MOZYME")
+            return
+          end if
 !
 !  Read in old density
 !
-            call pinout (0, .false.)
-          else
-!
-!  Re-allocate LMO memory without use of disk
-!
-            allocate (iwork(icocc_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            iwork = icocc
-            deallocate (icocc)
-            allocate (icocc(Nint(icocc_dim*1.6)), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            icocc(:icocc_dim) = iwork(:icocc_dim)
-            icocc(icocc_dim+1:) = 0
-            icocc_dim = Nint(icocc_dim*1.6)
-            deallocate (iwork)
-
-            allocate (rwork(cocc_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            rwork = cocc
-            deallocate (cocc)
-            allocate (cocc(Nint(cocc_dim*1.6)), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            cocc(:cocc_dim) = rwork(:cocc_dim)
-            cocc(cocc_dim+1:) = 0.0d0
-            cocc_dim = Nint(cocc_dim*1.6)
-            deallocate (rwork)
-
-            allocate (iwork(icvir_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            iwork = icvir
-            deallocate (icvir)
-            allocate (icvir(Nint(icvir_dim*1.6)), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            icvir(:icvir_dim) = iwork(:icvir_dim)
-            icvir(icvir_dim+1:) = 0
-            icvir_dim = Nint(icvir_dim*1.6)
-            deallocate (iwork)
-
-            allocate (rwork(cvir_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            rwork = cvir
-            deallocate (cvir)
-            allocate (cvir(Nint(cvir_dim*1.6)), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            cvir(:cvir_dim) = rwork(:cvir_dim)
-            cvir(cvir_dim+1:) = 0.0d0
-            cvir_dim = Nint(cvir_dim*1.6)
-            deallocate (rwork)
-          end if
+          call pinout (0, .false.)
           moperr = .false.
         else
           exit
@@ -327,98 +253,25 @@ subroutine iter_for_MOZYME (ee)
         if (moperr) then
 !  Delete old memory
 !
-          if (use_disk) then
-            deallocate (icocc, cocc, icvir, cvir)
+          deallocate (icocc, cocc, icvir, cvir)
 
 !
 !  Re-allocate more memory
 !
-            icocc_dim = Nint(icocc_dim*1.6)
-            cocc_dim = Nint(cocc_dim*1.6)
-            icvir_dim = Nint(icvir_dim*1.6)
-            cvir_dim = Nint(cvir_dim*1.6)
-            allocate (icocc(icocc_dim), cocc(cocc_dim), &
-                  & icvir(icvir_dim), cvir(cvir_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
+          icocc_dim = Nint(icocc_dim*1.6)
+          cocc_dim = Nint(cocc_dim*1.6)
+          icvir_dim = Nint(icvir_dim*1.6)
+          cvir_dim = Nint(cvir_dim*1.6)
+          allocate (icocc(icocc_dim), cocc(cocc_dim), &
+                & icvir(icvir_dim), cvir(cvir_dim), stat = i)
+          if (i /= 0) then
+            call memory_error(" iter_for MOZYME")
+            return
+          end if
 !
 !  Read in old density
 !
-            call pinout (0, .false.)
-          else
-!
-!  Re-allocate LMO memory without use of disk
-!
-            allocate (iwork(icocc_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            iwork = icocc
-            deallocate (icocc)
-            allocate (icocc(Nint(icocc_dim*1.6)), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            icocc(:icocc_dim) = iwork(:icocc_dim)
-            icocc(icocc_dim+1:) = 0
-            icocc_dim = Nint(icocc_dim*1.6)
-            deallocate (iwork)
-
-            allocate (rwork(cocc_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            rwork = cocc
-            deallocate (cocc)
-            allocate (cocc(Nint(cocc_dim*1.6)), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            cocc(:cocc_dim) = rwork(:cocc_dim)
-            cocc(cocc_dim+1:) = 0.0d0
-            cocc_dim = Nint(cocc_dim*1.6)
-            deallocate (rwork)
-
-            allocate (iwork(icvir_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            iwork = icvir
-            deallocate (icvir)
-            allocate (icvir(Nint(icvir_dim*1.6)), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            icvir(:icvir_dim) = iwork(:icvir_dim)
-            icvir(icvir_dim+1:) = 0
-            icvir_dim = Nint(icvir_dim*1.6)
-            deallocate (iwork)
-
-            allocate (rwork(cvir_dim), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            rwork = cvir
-            deallocate (cvir)
-            allocate (cvir(Nint(cvir_dim*1.6)), stat = i)
-            if (i /= 0) then
-              call memory_error(" iter_for MOZYME")
-              return
-            end if
-            cvir(:cvir_dim) = rwork(:cvir_dim)
-            cvir(cvir_dim+1:) = 0.0d0
-            cvir_dim = Nint(cvir_dim*1.6)
-            deallocate (rwork)
-          end if
+          call pinout (0, .false.)
           moperr = .false.
         else
           exit
@@ -467,10 +320,8 @@ subroutine iter_for_MOZYME (ee)
                 escf = escf + solv_energy * fpc_9
           end if
           if (prtpls)  write (iw, "(/,A,F16.6,A,/)") " PLS ESCF USING THE OLD LMOs:", escf, " KCAL/MOL"
-          if (use_disk) then
-            endfile (iw)
-            backspace (iw)
-          end if
+          endfile (iw)
+          backspace (iw)
         end if
         if (imol == numcal .and. numat > numred+1) call buildf (partf, f, -1)
         icalcn = step_num
@@ -483,7 +334,7 @@ subroutine iter_for_MOZYME (ee)
       if (moperr) return
       call check (nvir1, nnce, nce, icvir, icvir_dim, iorbs, ncvir, cvir, cvir_dim)
       if (moperr) return
-      if (Mod(niter+1, idnout) == 0 .and. use_disk) then
+      if (Mod(niter+1, idnout) == 0) then
         write (iw, "(A)") " .den FILE TO BE WRITTEN OUT"
         endfile (iw)
         backspace (iw)
@@ -511,14 +362,14 @@ subroutine iter_for_MOZYME (ee)
 !
           numcal = numcal + 1
           add_niter = niter
-          if (use_disk) call pinout(1, .false.)
+          call pinout(1, .false.)
           call l_control("OLDEN", len_trim("OLDEN"), 1)
           call l_control("SILENT", len_trim("SILENT"), 1)
           nscf = nscf - 1
           goto 80
         end if
       end if
-      if (bigscf .or. numcal /= 1+numcal0) then
+      if (bigscf .or. numcal /= 1) then
           call diagg (f, nocc1, nvir1,  idiagg,  partp, indi)
         idiagg = idiagg + 1
       else
@@ -583,10 +434,8 @@ subroutine iter_for_MOZYME (ee)
         niter + add_niter, ovmax,   escf, energy_diff
         write(iw,"(a)")trim(line)
         call to_screen(line)
-        if (use_disk) then
-          endfile (iw)
-          backspace (iw)
-        end if
+        endfile (iw)
+        backspace (iw)
         if (debug) then
           write (iw, "(A,F9.6,A,F7.1,A,F9.6,A,F8.2,A,F11.3,A,I7)") "TINY:", &
                & tiny, " SUMT:", sumt, " OVMAX:", ovmax, " SUMB:", sumb, &
@@ -604,12 +453,10 @@ subroutine iter_for_MOZYME (ee)
         write (iw, "(10F8.4)") (ws(i), i=1, numat)
         write (iw, "(A,F12.6)") " Variance:", sum
       end if
-      if (use_disk) then
-        endfile (iw)
-        backspace (iw)
-      end if
+      endfile (iw)
+      backspace (iw)
       call isitsc (escf, selcon, emin, iemin, iemax, okscf, niter, itrmax)
-      if ( .not. bigscf .and. numcal == 1+numcal0) then
+      if ( .not. bigscf .and. numcal == 1) then
         exit
       else if (okscf .and. niter > 1 .and. (emin /= 0.d0 .or. niter > 3)) then
         exit
@@ -648,7 +495,7 @@ subroutine iter_for_MOZYME (ee)
       if (opend) then
         rewind (iend)
       else
-        open (unit=iend, file=end_fn)
+        open (unit=iend, file=end_fn, status="UNKNOWN")
       end if
       write (iend, "(A)", err=1000) xchar
       go to 1010

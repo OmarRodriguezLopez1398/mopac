@@ -1,17 +1,18 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
       subroutine fmat(fmatrx, nreal, tscf, tder, deldip, heat, evecs, ts)
 !-----------------------------------------------
@@ -19,7 +20,7 @@
 !-----------------------------------------------
       use common_arrays_C, only : coord, na, labels, atmass, p, q, xparam
       use molkst_C, only : numat, nvar, keywrd, tleft, moperr, natoms, tdump, &
-      emin, mozyme, use_disk
+      emin, mozyme
       use parameters_C, only : tore
       use funcon_C, only : fpc_10
       use chanel_C, only : iw, ilog, log
@@ -149,10 +150,8 @@
           write (line, '(" STEP:",I4,23X,"INTEGRAL =",F10.2," TIME LEFT:",F10.2)') i, totime, tleft
           write(iw,"(a)")line(:len_trim(line))
           call to_screen(line)
-          if (use_disk) then
-            endfile (iw)
-            backspace (iw)
-          end if
+          endfile (iw)
+          backspace (iw)
           iskip = iskip - 1
           lu = lu + i
           cycle
@@ -325,10 +324,8 @@
       '('' STEP:'',I4,'' RESTART FILE WRITTEN, INTEGRAL ='',F10.2,'' TIME LEFT:'',F10.2)') &
       i, min(totime,9999999.9D0), tleft
           write(iw,'(a)')trim(line)
-          if (use_disk) then
-            endfile (iw)
-            backspace (iw)
-          end if
+          endfile (iw)
+          backspace (iw)
           if (log) write (ilog, '(a)')trim(line)
           resfil = .FALSE.
         else
@@ -336,10 +333,8 @@
       '('' STEP:'',I4,'' TIME ='',F9.2,'' SECS, INTEGRAL ='',F10.2,'' TIME LEFT:'',F10.2)') &
       i, tstep, totime, tleft
           write(iw,'(a)')trim(line)
-          if (use_disk) then
-            endfile (iw)
-            backspace (iw)
-          end if
+          endfile (iw)
+          backspace (iw)
           if (log) write (ilog, '(a)')trim(line)
         end if
         call to_screen(line)

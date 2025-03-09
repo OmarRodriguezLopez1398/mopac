@@ -1,17 +1,18 @@
 ! Molecular Orbital PACkage (MOPAC)
-! Copyright 2021 Virginia Polytechnic Institute and State University
+! Copyright (C) 2021, Virginia Polytechnic Institute and State University
 !
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
+! MOPAC is free software: you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
-!    http://www.apache.org/licenses/LICENSE-2.0
+! MOPAC is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU Lesser General Public License for more details.
 !
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
     subroutine fock2(f, ptot, p, w, wj, wk, numat, nfirst, nlast, mode)
 !-----------------------------------------------
@@ -29,8 +30,8 @@
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
       integer  :: numat, mode
-      integer  :: nfirst(abs(numat))
-      integer  :: nlast(abs(numat))
+      integer  :: nfirst(numat_ref)
+      integer  :: nlast(numat_ref)
       double precision  :: f(mpack)
       double precision , intent(in) :: ptot(mpack)
       double precision  :: p(mpack)
@@ -81,12 +82,12 @@
         if (allocated(ptot2))  deallocate(ptot2)
         if (allocated(ifact))  deallocate(ifact)
         if (allocated(i1fact)) deallocate(i1fact)
-        allocate(ptot2(max(2,numat),81), ifact(max(18,norbs)), i1fact(max(18,norbs)))
+        allocate(ptot2(numat,81), ifact(3 + norbs), i1fact(3 + norbs))
         icalcn = numcal
 !
 !   SET UP ARRAY OF LOWER HALF TRIANGLE INDICES (PASCAL'S TRIANGLE)
 !
-        do i = 1, max(18,norbs)
+        do i = 1, norbs
           ifact(i) = (i*(i - 1))/2
           i1fact(i) = ifact(i) + i
         end do
